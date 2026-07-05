@@ -1,0 +1,70 @@
+{
+  "products": [
+    {
+      "step": "Cleanser",
+      "productName": "Low pH Good Morning Gel Cleanser",
+      "brand": "COSRX",
+      "origin": "Korea",
+      "matchReason": "Gentle pH-balanced formula that removes excess sebum without stripping moisture, ideal for oily and combination skin prone to breakouts.",
+      "keyIngredients": ["Tea Tree Oil", "Betaine Salicylate", "Willow Bark Extract"],
+      "vendors": [
+        { "name": "Amazon", "price": "$14.00", "url": "https://www.amazon.com" },
+        { "name": "YesStyle", "price": "$11.99", "url": "https://www.yesstyle.com" },
+        { "name": "Olive Young", "price": "$12.50", "url": "https://global.oliveyoung.com" }
+      ]
+    },
+    {
+      "step": "Toner",
+      "productName": "AHA/BHA Clarifying Treatment Toner",
+      "brand": "Some By Mi",
+      "origin": "Korea",
+      "matchReason": "Combines AHA and BHA exfoliants to gently unclog pores and reduce acne, while Tea Tree soothes inflammation for clearer skin over time.",
+      "keyIngredients": ["AHA (Glycolic Acid)", "BHA (Salicylic Acid)", "Tea Tree Extract", "Niacinamide"],
+      "vendors": [
+        { "name": "YesStyle", "price": "$16.00", "url": "https://www.yesstyle.com" },
+        { "name": "Amazon", "price": "$17.99", "url": "https://www.amazon.com" },
+        { "name": "Stylevana", "price": "$15.50", "url": "https://www.stylevana.com" }
+      ]
+    },
+    {
+      "step": "Serum",
+      "productName": "Niacinamide 10% + Zinc 1%",
+      "brand": "The Ordinary",
+      "origin": "Canada",
+      "matchReason": "High-strength niacinamide visibly minimizes pores and balances sebum production, while zinc provides additional anti-acne benefits without clogging pores.",
+      "keyIngredients": ["Niacinamide 10%", "Zinc PCA 1%"],
+      "vendors": [
+        { "name": "Sephora", "price": "$13.90", "url": "https://www.sephora.com" },
+        { "name": "ASOS", "price": "$12.50", "url": "https://www.asos.com" },
+        { "name": "Ulta", "price": "$13.90", "url": "https://www.ulta.com" }
+      ]
+    },
+    {
+      "step": "Moisturizer",
+      "productName": "Oil-Free Moisture with SPF 15",
+      "brand": "Neutrogena",
+      "origin": "USA",
+      "matchReason": "Lightweight, non-comedogenic formula provides essential hydration without adding shine, formulated specifically for acne-prone and combination skin types.",
+      "keyIngredients": ["Glycerin", "Dimethicone", "SPF 15 (Octinoxate)"],
+      "vendors": [
+        { "name": "CVS", "price": "$12.99", "url": "https://www.cvs.com" },
+        { "name": "Walgreens", "price": "$11.99", "url": "https://www.walgreens.com" },
+        { "name": "Amazon", "price": "$10.97", "url": "https://www.amazon.com" }
+      ]
+    },
+    {
+      "step": "Sunscreen",
+      "productName": "Aqua Sun Gel SPF 50+ PA++++",
+      "brand": "Biore UV",
+      "origin": "Japan",
+      "matchReason": "Ultra-light watery gel texture that sits invisible on skin with no white cast, making it perfect for oily skin that resists heavy sunscreens — the highest PA rating protects against UV-induced breakout scarring.",
+      "keyIngredients": ["Uvinul A Plus", "Uvasorb HEB", "Aqua Boosting Complex"],
+      "vendors": [
+        { "name": "Amazon", "price": "$14.00", "url": "https://www.amazon.com" },
+        { "name": "YesStyle", "price": "$13.50", "url": "https://www.yesstyle.com" },
+        { "name": "Kirei Kirei Shop", "price": "$12.80", "url": "https://www.kireikirei.shop" }
+      ]
+    }
+  ],
+  "disclaimer": "These recommendations are for informational purposes only and are not a substitute for professional dermatological advice. Individual results may vary. Patch-test new products before full application, especially if you have sensitive or reactive skin. Prices are approximate and subject to change."
+}
