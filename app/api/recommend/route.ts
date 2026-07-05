@@ -91,51 +91,65 @@ Search for real products with current pricing and purchase links. Return only th
 }
 
 function extractClaudeTextResponse(response: unknown): string {
-  const maybeResponse = response as {
-    content?: unknown;
-    text?: string;
-    output_text?: string;
-    error?: unknown;
-    message?: { content?: unknown };
-  };
+  const maybeResponse = response as Record<string, unknown>;
 
-  const contentBlocks = Array.isArray(maybeResponse?.content)
-    ? maybeResponse.content
-    : [];
+  if (typeof maybeResponse === "string" && maybeResponse.trim()) {
+    return maybeResponse;
+  }
 
-  for (const block of contentBlocks) {
-    if (typeof block === "object" && block !== null) {
-      const candidate = block as { type?: string; text?: string; content?: unknown };
-      if (typeof candidate.text === "string" && candidate.text.trim()) {
-        return candidate.text;
-      }
-      if (typeof candidate.content === "string" && candidate.content.trim()) {
-        return candidate.content;
+  if (typeof maybeResponse?.content === "string" && maybeResponse.content.trim()) {
+    return maybeResponse.content;
+  }
+
+  if (Array.isArray(maybeResponse?.content)) {
+    for (const block of maybeResponse.content) {
+      if (typeof block === "object" && block !== null) {
+        const candidate = block as Record<string, unknown>;
+        if (typeof candidate.text === "string" && candidate.text.trim()) {
+          return candidate.text;
+        }
+        if (typeof candidate.content === "string" && candidate.content.trim()) {
+          return candidate.content;
+        }
       }
     }
   }
 
-  if (typeof maybeResponse?.text === "string" && maybeResponse.text.trim()) {
-    return maybeResponse.text;
-  }
+  const knownTextFields = [
+    "text",
+    "output_text",
+    "response_text",
+    "completion",
+    "answer",
+    "message",
+  ];
 
-  if (typeof maybeResponse?.output_text === "string" && maybeResponse.output_text.trim()) {
-    return maybeResponse.output_text;
-  }
-
-  if (maybeResponse?.message && typeof maybeResponse.message === "object") {
-    const nested = maybeResponse.message as { content?: unknown };
-    if (typeof nested.content === "string" && nested.content.trim()) {
-      return nested.content;
+  for (const field of knownTextFields) {
+    const value = maybeResponse[field];
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+    if (typeof value === "object" && value !== null) {
+      const nested = value as Record<string, unknown>;
+      if (typeof nested.text === "string" && nested.text.trim()) {
+        return nested.text;
+      }
+      if (typeof nested.content === "string" && nested.content.trim()) {
+        return nested.content;
+      }
     }
   }
 
   if (maybeResponse?.error) {
-    throw new Error(
-      typeof maybeResponse.error === "string"
-        ? maybeResponse.error
-        : "Provider returned an error response"
-    );
+    const errorValue = maybeResponse.error;
+    if (typeof errorValue === "string") {
+      throw new Error(errorValue);
+    }
+    if (typeof errorValue === "object" && errorValue !== null) {
+      const errObj = errorValue as Record<string, unknown>;
+      const message = typeof errObj.message === "string" ? errObj.message : JSON.stringify(errObj);
+      throw new Error(message);
+    }
   }
 
   return "";
@@ -206,7 +220,8 @@ async function callClaudeAgent(filters: UserFilters): Promise<RoutineResponse> {
 
   const responseText = extractClaudeTextResponse(response);
   if (!responseText) {
-    throw new Error("No text response from Claude");
+    const debugResponse = JSON.stringify(response, Object.keys(response || {}).slice(0, 10), 2);
+    throw new Error(`No text response from Claude; response shape: ${debugResponse}`);
   }
 
   let parsed: RoutineResponse;
