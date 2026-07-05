@@ -24,10 +24,12 @@ function buildSystemPrompt(): string {
 
 Your task: research real, currently available skincare products and recommend a personalized routine.
 
-You MUST use the Tavily search tool to find:
+If Tavily search tools are available, use them to find:
 1. Currently available products matching the user's criteria
 2. Current pricing from major retailers
 3. Real product pages and purchase links
+
+If tools are unavailable, provide the best possible recommendation based on your existing knowledge and clearly keep the response grounded in realistic, widely available products.
 
 Return your response as a JSON object with this EXACT structure (no markdown, no code blocks, just raw JSON):
 {
@@ -88,49 +90,132 @@ function buildUserPrompt(filters: UserFilters): string {
 Search for real products with current pricing and purchase links. Return only the JSON object.`;
 }
 
+function extractClaudeTextResponse(response: unknown): string {
+  const maybeResponse = response as {
+    content?: unknown;
+    text?: string;
+    output_text?: string;
+    error?: unknown;
+    message?: { content?: unknown };
+  };
+
+  const contentBlocks = Array.isArray(maybeResponse?.content)
+    ? maybeResponse.content
+    : [];
+
+  for (const block of contentBlocks) {
+    if (typeof block === "object" && block !== null) {
+      const candidate = block as { type?: string; text?: string; content?: unknown };
+      if (typeof candidate.text === "string" && candidate.text.trim()) {
+        return candidate.text;
+      }
+      if (typeof candidate.content === "string" && candidate.content.trim()) {
+        return candidate.content;
+      }
+    }
+  }
+
+  if (typeof maybeResponse?.text === "string" && maybeResponse.text.trim()) {
+    return maybeResponse.text;
+  }
+
+  if (typeof maybeResponse?.output_text === "string" && maybeResponse.output_text.trim()) {
+    return maybeResponse.output_text;
+  }
+
+  if (maybeResponse?.message && typeof maybeResponse.message === "object") {
+    const nested = maybeResponse.message as { content?: unknown };
+    if (typeof nested.content === "string" && nested.content.trim()) {
+      return nested.content;
+    }
+  }
+
+  if (maybeResponse?.error) {
+    throw new Error(
+      typeof maybeResponse.error === "string"
+        ? maybeResponse.error
+        : "Provider returned an error response"
+    );
+  }
+
+  return "";
+}
+
 async function callClaudeAgent(filters: UserFilters): Promise<RoutineResponse> {
   const config = getAIConfig();
-  const tavilyKey = process.env.TAVILY_API_KEY;
-
-  if (!tavilyKey || tavilyKey === "replace_with_tavily_api_key") {
-    throw new Error("TAVILY_API_KEY is not configured");
+  if (!config.apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is not configured");
   }
+
+  const tavilyApiKey = process.env.TAVILY_API_KEY;
+  const enableMcpTools = process.env.USE_NINEROUTER === "true" && Boolean(
+    tavilyApiKey && process.env.ENABLE_TAVILY_MCP === "true"
+  );
 
   const client = new Anthropic({
     baseURL: config.baseURL,
     apiKey: config.apiKey,
   });
 
-  const response = await (client.beta.messages as any).create({
+  const requestPayload: Record<string, unknown> = {
     model: config.model,
     max_tokens: 8096,
     system: buildSystemPrompt(),
     messages: [{ role: "user", content: buildUserPrompt(filters) }],
-    mcp_servers: [
-      {
-        type: "url",
-        url: `https://mcp.tavily.com/mcp/?tavilyApiKey=${tavilyKey}`,
-        name: "tavily",
-      },
-    ],
-    tools: [
-      {
-        type: "mcp_toolset",
-        mcp_server_name: "tavily",
-      },
-    ],
-    betas: ["mcp-client-2025-11-20"],
-  });
+  };
 
-  // Extract text content from the response
-  const textBlock = response.content.find(
-    (block: { type: string }) => block.type === "text"
-  );
-  if (!textBlock || textBlock.type !== "text") {
+  if (enableMcpTools) {
+    Object.assign(requestPayload, {
+      mcp_servers: [
+        {
+          type: "url",
+          url: `https://mcp.tavily.com/mcp/?tavilyApiKey=${tavilyApiKey}`,
+          name: "tavily",
+        },
+      ],
+      tools: [
+        {
+          type: "mcp_toolset",
+          mcp_server_name: "tavily",
+        },
+      ],
+      betas: ["mcp-client-2025-11-20"],
+    });
+  }
+
+  const messagesClient = (client as any).messages ?? (client as any).beta?.messages;
+  if (!messagesClient?.create) {
+    throw new Error("Anthropic messages API is unavailable");
+  }
+
+  let response;
+  try {
+    response = await messagesClient.create(requestPayload);
+  } catch (error) {
+    const fallbackPayload = { ...requestPayload };
+    delete fallbackPayload.mcp_servers;
+    delete fallbackPayload.tools;
+    delete fallbackPayload.betas;
+
+    if (enableMcpTools && error instanceof Error && /tool use|request body|invalid/i.test(error.message)) {
+      response = await messagesClient.create(fallbackPayload);
+    } else {
+      throw error;
+    }
+  }
+
+  const responseText = extractClaudeTextResponse(response);
+  if (!responseText) {
     throw new Error("No text response from Claude");
   }
 
-  const parsed: RoutineResponse = JSON.parse(textBlock.text);
+  let parsed: RoutineResponse;
+  try {
+    parsed = JSON.parse(responseText);
+  } catch {
+    throw new Error("Invalid JSON response from Claude");
+  }
+
   return parsed;
 }
 
@@ -166,6 +251,12 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("Recommendation generation failed", err);
+
+    if (process.env.USE_MOCK_DATA === "true" || process.env.FALLBACK_TO_MOCK_ON_ERROR === "true") {
+      return Response.json(mockData);
+    }
+
     return Response.json({ error: message }, { status: 500 });
   }
 }

@@ -9,12 +9,12 @@ export function getAIConfig(): AIConfig {
     return {
       baseURL: process.env.NINEROUTER_BASE_URL ?? "http://127.0.0.1:20128",
       apiKey: process.env.NINEROUTER_API_KEY ?? "",
-      model: process.env.NINEROUTER_MODEL ?? "kr/claude-sonnet-4.5",
+      model: process.env.NINEROUTER_MODEL ?? "claude-3-5-sonnet-latest",
     };
   }
   return {
-    baseURL: undefined,
+    baseURL: process.env.ANTHROPIC_BASE_URL ?? undefined,
     apiKey: process.env.ANTHROPIC_API_KEY ?? "",
-    model: process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8",
+    model: process.env.ANTHROPIC_MODEL ?? "claude-3-5-sonnet-latest",
   };
 }
