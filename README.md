@@ -4,7 +4,7 @@ A personalized skincare routine recommender powered by AI and live product resea
 
 ## What is this project?
 
-**Skincare Scout** is a full-stack Next.js application (App Router) that delivers personalized skincare product recommendations based on your unique skin profile. Using an interactive filter form, you specify your skin type, concerns, budget, brand preferences, and more. The app then leverages Claude AI with Tavily MCP integration to research real, currently available skincare products and curates a customized routine tailored to your needs.
+**Skincare Bestie** is a full-stack Next.js application (App Router) that delivers personalized skincare product recommendations based on your unique skin profile. Using an interactive filter form, you specify your skin type, concerns, budget, brand preferences, and more. The app then leverages Claude AI with Tavily MCP integration to research real, currently available skincare products and curates a customized routine tailored to your needs.
 
 The results are presented as a clean, interactive dashboard showing each product step with ingredient highlights and direct purchase links.
 
