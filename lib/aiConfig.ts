@@ -30,9 +30,13 @@ export function getAIConfig(): AIConfig {
     };
   }
 
-  const explicitProvider = normalizeProviderName(process.env.AI_PROVIDER?.trim().toLowerCase());
+  const rawProvider = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const explicitProvider = normalizeProviderName(rawProvider);
 
-  if (explicitProvider === "gemini" || process.env.GEMINI_API_KEY || process.env.GEMINI_BASE_URL || process.env.ANTHROPIC_BASE_URL?.includes("generativelanguage.googleapis.com")) {
+  // If provider is explicitly set to a non-gemini value, respect it without auto-detecting Gemini
+  const autoDetectGemini = !rawProvider || explicitProvider === "gemini";
+
+  if (explicitProvider === "gemini" || (autoDetectGemini && (process.env.GEMINI_API_KEY || process.env.GEMINI_BASE_URL || process.env.ANTHROPIC_BASE_URL?.includes("generativelanguage.googleapis.com")))) {
     return {
       provider: "gemini",
       baseURL: process.env.GEMINI_BASE_URL ?? process.env.ANTHROPIC_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta",

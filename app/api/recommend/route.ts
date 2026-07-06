@@ -123,10 +123,12 @@ function extractClaudeTextResponse(response: unknown): string {
         if (typeof block === "object" && block !== null) {
           const candidate = block as Record<string, unknown>;
           if (typeof candidate.text === "string" && candidate.text.trim()) {
-            return candidate.text;
+            const extracted = extractJsonObject(candidate.text);
+            return extracted ?? candidate.text;
           }
           if (typeof candidate.content === "string" && candidate.content.trim()) {
-            return candidate.content;
+            const extracted = extractJsonObject(candidate.content);
+            return extracted ?? candidate.content;
           }
         }
       }
