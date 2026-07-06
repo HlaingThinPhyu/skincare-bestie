@@ -92,6 +92,8 @@ skincare-bestie/
    USE_NINEROUTER=false            # true = use 9Router proxy
    TAVILY_API_KEY=your_key_here    # Required for live search
    ANTHROPIC_API_KEY=your_key_here # Required for Claude (when USE_NINEROUTER=false)
+   ANTHROPIC_BASE_URL=anthropic_url_endpoint_here # Required for Claude
+   ANTHROPIC_MODEL=your_model_here # Required for Claude
    ```
 
 4. **Run the development server**
