@@ -7,6 +7,9 @@ import type { UserFilters, RoutineResponse } from "@/lib/types";
 
 export default function Home() {
   const [routine, setRoutine] = useState<RoutineResponse | null>(null);
+  // temporarily hide debug/request traces in the UI
+  // const [debugTrace, setDebugTrace] = useState<Record<string, unknown> | null>(null);
+  // const [submittedFilters, setSubmittedFilters] = useState<UserFilters | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,6 +17,8 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setRoutine(null);
+    // setDebugTrace(null);
+    // setSubmittedFilters(filters);
 
     try {
       const res = await fetch("/api/recommend", {
@@ -23,10 +28,15 @@ export default function Home() {
       });
 
       const data = await res.json();
+      const payload = data as RoutineResponse & { debug?: Record<string, unknown> };
+      // debug trace is hidden in the UI for now
+      // setDebugTrace(payload.debug ?? null);
+
       if (!res.ok) {
         throw new Error(data.error ?? "Something went wrong");
       }
-      setRoutine(data as RoutineResponse);
+
+      setRoutine(payload as RoutineResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to get recommendations");
     } finally {
@@ -48,7 +58,7 @@ export default function Home() {
             ✦ AI-Powered Skincare Research
           </div>
           <h1 className="hero-title">
-            Skincare Scout
+            Skincare Bestie: Your Personalized Routine, Curated by AI
           </h1>
           <p className="hero-subtitle">
             Tell us your skin profile. Our AI researches live products and builds
@@ -58,14 +68,63 @@ export default function Home() {
 
         {/* Form or Results */}
         {routine ? (
-          <ResultsDashboard routine={routine} onReset={() => setRoutine(null)} />
+          <>
+            <ResultsDashboard routine={routine} onReset={() => setRoutine(null)} />
+            {/* debugTrace UI hidden temporarily
+            {debugTrace && (
+              <section className="glass-card rounded-2xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">Live AI Trace</h2>
+                    <p className="text-sm text-purple-300">Step-by-step verification of the request and response</p>
+                  </div>
+                </div>
+                <pre className="max-h-96 overflow-auto rounded-xl bg-slate-950/80 p-4 text-xs text-slate-200 whitespace-pre-wrap">
+{JSON.stringify(debugTrace, null, 2)}
+                </pre>
+              </section>
+            )}
+            */}
+          </>
         ) : (
           <>
             <FilterForm onSubmit={handleSubmit} loading={loading} />
+            {/* submittedFilters UI hidden temporarily
+            {submittedFilters && (
+              <section className="glass-card rounded-2xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">Submitted Filters</h2>
+                    <p className="text-sm text-purple-300">This is the exact input object sent to the API.</p>
+                  </div>
+                </div>
+                <pre className="max-h-96 overflow-auto rounded-xl bg-slate-950/80 p-4 text-xs text-slate-200 whitespace-pre-wrap">
+{JSON.stringify(submittedFilters, null, 2)}
+                </pre>
+              </section>
+            )}
+            */}
             {error && (
-              <div className="error-box rounded-xl p-4 text-center text-sm">
-                <span className="font-semibold">Error:</span> {error}
-              </div>
+              <>
+                <div className="error-box rounded-xl p-4 text-center text-sm">
+                  <span className="font-semibold">Error:</span> {error}
+                </div>
+                {/* request trace UI hidden temporarily
+                {debugTrace && (
+                  <section className="glass-card rounded-2xl p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-semibold text-white">Request Trace</h2>
+                        <p className="text-sm text-purple-300">Inspect the request payload and AI provider details.</p>
+                      </div>
+                    </div>
+                    <pre className="max-h-96 overflow-auto rounded-xl bg-slate-950/80 p-4 text-xs text-slate-200 whitespace-pre-wrap">
+{JSON.stringify(debugTrace, null, 2)}
+                    </pre>
+                  </section>
+                )}
+                */}
+              </>
             )}
           </>
         )}

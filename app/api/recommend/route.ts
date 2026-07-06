@@ -24,13 +24,6 @@ function buildSystemPrompt(): string {
 
 Your task: research real, currently available skincare products and recommend a personalized routine.
 
-If Tavily search tools are available, use them to find:
-1. Currently available products matching the user's criteria
-2. Current pricing from major retailers
-3. Real product pages and purchase links
-
-If tools are unavailable, provide the best possible recommendation based on your existing knowledge and clearly keep the response grounded in realistic, widely available products.
-
 Return your response as a JSON object with this EXACT structure (no markdown, no code blocks, just raw JSON):
 {
   "products": [
@@ -51,8 +44,6 @@ Return your response as a JSON object with this EXACT structure (no markdown, no
 
 Guidelines:
 - Include 3-7 products depending on the requested routine complexity
-- All vendors must have real URLs to actual product listings
-- Prices must be accurate and current
 - Match products strictly to the user's skin type, concern, budget, and ingredient restrictions
 - Return ONLY the JSON object, no other text`;
 }
@@ -71,10 +62,7 @@ function buildUserPrompt(filters: UserFilters): string {
     full: "full routine (6-7 steps)",
   };
 
-  const avoid =
-    filters.avoidIngredients.length > 0
-      ? filters.avoidIngredients.join(", ")
-      : "none";
+  const avoid = filters.avoidIngredients.length > 0 ? filters.avoidIngredients.join(", ") : "none";
 
   return `Please research and recommend a skincare routine for this profile:
 
@@ -87,141 +75,248 @@ function buildUserPrompt(filters: UserFilters): string {
 - Climate: ${filters.climate}
 - Current routine level: ${filters.currentRoutine}
 
-Search for real products with current pricing and purchase links. Return only the JSON object.`;
+Return only the JSON object.`;
+}
+
+function extractJsonObject(text: string): string | null {
+  let depth = 0;
+  let endIndex = -1;
+
+  for (let i = text.length - 1; i >= 0; i -= 1) {
+    const char = text[i];
+    if (char === "}") {
+      if (endIndex === -1) {
+        endIndex = i;
+      }
+      depth += 1;
+    } else if (char === "{") {
+      if (depth > 0) {
+        depth -= 1;
+        if (depth === 0 && endIndex !== -1) {
+          return text.slice(i, endIndex + 1);
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function extractClaudeTextResponse(response: unknown): string {
-  const maybeResponse = response as Record<string, unknown>;
+  const maybeResponse = response as Record<string, unknown> | string | undefined;
 
   if (typeof maybeResponse === "string" && maybeResponse.trim()) {
-    return maybeResponse;
+    const extracted = extractJsonObject(maybeResponse);
+    return extracted ?? maybeResponse;
   }
 
-  if (typeof maybeResponse?.content === "string" && maybeResponse.content.trim()) {
-    return maybeResponse.content;
-  }
+  if (maybeResponse && typeof maybeResponse === "object") {
+    const responseObject = maybeResponse as Record<string, unknown>;
 
-  if (Array.isArray(maybeResponse?.content)) {
-    for (const block of maybeResponse.content) {
-      if (typeof block === "object" && block !== null) {
-        const candidate = block as Record<string, unknown>;
-        if (typeof candidate.text === "string" && candidate.text.trim()) {
-          return candidate.text;
+    if (typeof responseObject.content === "string" && responseObject.content.trim()) {
+      const extracted = extractJsonObject(responseObject.content);
+      return extracted ?? responseObject.content;
+    }
+
+    if (Array.isArray(responseObject.content)) {
+      for (const block of responseObject.content) {
+        if (typeof block === "object" && block !== null) {
+          const candidate = block as Record<string, unknown>;
+          if (typeof candidate.text === "string" && candidate.text.trim()) {
+            return candidate.text;
+          }
+          if (typeof candidate.content === "string" && candidate.content.trim()) {
+            return candidate.content;
+          }
         }
-        if (typeof candidate.content === "string" && candidate.content.trim()) {
-          return candidate.content;
+      }
+    }
+
+    const choiceText = Array.isArray(responseObject.choices)
+      ? (responseObject.choices[0] as Record<string, unknown>)?.message as Record<string, unknown> | undefined
+      : undefined;
+    if (choiceText && typeof choiceText.content === "string" && choiceText.content.trim()) {
+      const extracted = extractJsonObject(choiceText.content);
+      return extracted ?? choiceText.content;
+    }
+
+    const knownTextFields = ["text", "output_text", "response_text", "completion", "answer", "message"];
+
+    for (const field of knownTextFields) {
+      const value = responseObject[field];
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+      if (typeof value === "object" && value !== null) {
+        const nested = value as Record<string, unknown>;
+        if (typeof nested.text === "string" && nested.text.trim()) {
+          return nested.text;
+        }
+        if (typeof nested.content === "string" && nested.content.trim()) {
+          return nested.content;
         }
       }
     }
-  }
 
-  const knownTextFields = [
-    "text",
-    "output_text",
-    "response_text",
-    "completion",
-    "answer",
-    "message",
-  ];
-
-  for (const field of knownTextFields) {
-    const value = maybeResponse[field];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-    if (typeof value === "object" && value !== null) {
-      const nested = value as Record<string, unknown>;
-      if (typeof nested.text === "string" && nested.text.trim()) {
-        return nested.text;
+    if (Array.isArray(responseObject.choices)) {
+      for (const choice of responseObject.choices) {
+        if (choice && typeof choice === "object") {
+          const choiceObj = choice as Record<string, unknown>;
+          const message = choiceObj.message as Record<string, unknown> | undefined;
+          if (message) {
+            if (typeof message.content === "string" && message.content.trim()) {
+                const extracted = extractJsonObject(message.content);
+                return extracted ?? message.content;
+            }
+            if (typeof message.text === "string" && message.text.trim()) {
+              return message.text;
+            }
+          }
+          if (typeof choiceObj.text === "string" && choiceObj.text.trim()) {
+            return choiceObj.text;
+          }
+          if (typeof choiceObj.content === "string" && choiceObj.content.trim()) {
+            return choiceObj.content;
+          }
+        }
       }
-      if (typeof nested.content === "string" && nested.content.trim()) {
-        return nested.content;
-      }
     }
-  }
 
-  if (maybeResponse?.error) {
-    const errorValue = maybeResponse.error;
-    if (typeof errorValue === "string") {
-      throw new Error(errorValue);
-    }
-    if (typeof errorValue === "object" && errorValue !== null) {
-      const errObj = errorValue as Record<string, unknown>;
-      const message = typeof errObj.message === "string" ? errObj.message : JSON.stringify(errObj);
-      throw new Error(message);
+    if (responseObject.error) {
+      const errorValue = responseObject.error;
+      if (typeof errorValue === "string") {
+        throw new Error(errorValue);
+      }
+      if (typeof errorValue === "object" && errorValue !== null) {
+        const errObj = errorValue as Record<string, unknown>;
+        const message = typeof errObj.message === "string" ? errObj.message : JSON.stringify(errObj);
+        throw new Error(message);
+      }
     }
   }
 
   return "";
 }
 
-async function callClaudeAgent(filters: UserFilters): Promise<RoutineResponse> {
-  const config = getAIConfig();
-  if (!config.apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not configured");
+function extractGeminiTextResponse(response: unknown): string {
+  const maybeResponse = response as Record<string, unknown>;
+  const candidates = Array.isArray(maybeResponse?.candidates) ? maybeResponse.candidates : [];
+
+  for (const candidate of candidates) {
+    const content = (candidate as Record<string, unknown>)?.content as Record<string, unknown> | undefined;
+    const parts = Array.isArray(content?.parts) ? content.parts : [];
+    for (const part of parts) {
+      const text = (part as Record<string, unknown>)?.text;
+      if (typeof text === "string" && text.trim()) {
+        return text;
+      }
+    }
   }
 
+  return typeof maybeResponse?.text === "string" ? maybeResponse.text : "";
+}
+
+function isRetryableAnthropicError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return /404|not found|model|unsupported|invalid|request body|tool use/i.test(message);
+}
+
+function getFallbackModel(model: string): string {
+  if (model === "claude-3-5-sonnet-latest") {
+    return "claude-sonnet-4-5";
+  }
+  if (model === "claude-sonnet-4-5") {
+    return "claude-3-5-sonnet-latest";
+  }
+  return "claude-3-5-sonnet-latest";
+}
+
+function getGeminiModelCandidates(model: string): string[] {
+  return [model, "gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro"].filter(
+    (value, index, array) => value && array.indexOf(value) === index
+  );
+}
+
+async function callAnthropicHelper(configParam: { provider: string; baseURL: string | undefined; apiKey: string; model: string }, systemPrompt: string, prompt: string, requestTrace: Record<string, unknown>) {
   const tavilyApiKey = process.env.TAVILY_API_KEY;
   const enableMcpTools = process.env.USE_NINEROUTER === "true" && Boolean(
     tavilyApiKey && process.env.ENABLE_TAVILY_MCP === "true"
   );
 
   const client = new Anthropic({
-    baseURL: config.baseURL,
-    apiKey: config.apiKey,
+    baseURL: configParam.baseURL,
+    apiKey: configParam.apiKey,
   });
 
   const requestPayload: Record<string, unknown> = {
-    model: config.model,
+    model: configParam.model,
     max_tokens: 8096,
-    system: buildSystemPrompt(),
-    messages: [{ role: "user", content: buildUserPrompt(filters) }],
+    system: systemPrompt,
+    messages: [{ role: "user", content: prompt }],
   };
 
   if (enableMcpTools) {
     Object.assign(requestPayload, {
-      mcp_servers: [
-        {
-          type: "url",
-          url: `https://mcp.tavily.com/mcp/?tavilyApiKey=${tavilyApiKey}`,
-          name: "tavily",
-        },
-      ],
-      tools: [
-        {
-          type: "mcp_toolset",
-          mcp_server_name: "tavily",
-        },
-      ],
+      mcp_servers: [{ type: "url", url: `https://mcp.tavily.com/mcp/?tavilyApiKey=${tavilyApiKey}`, name: "tavily" }],
+      tools: [{ type: "mcp_toolset", mcp_server_name: "tavily" }],
       betas: ["mcp-client-2025-11-20"],
     });
   }
 
-  const messagesClient = (client as any).messages ?? (client as any).beta?.messages;
+  requestTrace.requestPayload = requestPayload;
+
+  const typedClient = client as unknown as {
+    messages?: { create?: (payload: Record<string, unknown>) => Promise<unknown> };
+    beta?: { messages?: { create?: (payload: Record<string, unknown>) => Promise<unknown> } };
+  };
+  const messagesClient = typedClient.messages ?? typedClient.beta?.messages;
   if (!messagesClient?.create) {
     throw new Error("Anthropic messages API is unavailable");
   }
 
-  let response;
-  try {
-    response = await messagesClient.create(requestPayload);
-  } catch (error) {
-    const fallbackPayload = { ...requestPayload };
-    delete fallbackPayload.mcp_servers;
-    delete fallbackPayload.tools;
-    delete fallbackPayload.betas;
+  const fallbackPayload = { ...requestPayload };
+  delete fallbackPayload.mcp_servers;
+  delete fallbackPayload.tools;
+  delete fallbackPayload.betas;
 
-    if (enableMcpTools && error instanceof Error && /tool use|request body|invalid/i.test(error.message)) {
-      response = await messagesClient.create(fallbackPayload);
-    } else {
-      throw error;
+  const payloadCandidates = enableMcpTools ? [requestPayload, fallbackPayload] : [requestPayload];
+  const modelCandidates = [configParam.model, getFallbackModel(configParam.model)].filter(
+    (value, index, array) => value && array.indexOf(value) === index
+  );
+
+  let response;
+  let lastError: unknown;
+
+  for (const model of modelCandidates) {
+    for (const payload of payloadCandidates) {
+      try {
+        response = await messagesClient.create({ ...payload, model });
+        break;
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableAnthropicError(error)) {
+          throw error;
+        }
+      }
+    }
+
+    if (response) {
+      break;
     }
   }
 
+  if (!response) {
+    throw lastError ?? new Error("Anthropic request failed");
+  }
+
   const responseText = extractClaudeTextResponse(response);
+  requestTrace.response = response;
   if (!responseText) {
-    const debugResponse = JSON.stringify(response, Object.keys(response || {}).slice(0, 10), 2);
-    throw new Error(`No text response from Claude; response shape: ${debugResponse}`);
+    throw new Error("No text response from Claude");
   }
 
   let parsed: RoutineResponse;
@@ -231,7 +326,146 @@ async function callClaudeAgent(filters: UserFilters): Promise<RoutineResponse> {
     throw new Error("Invalid JSON response from Claude");
   }
 
-  return parsed;
+  // mark the connection as successful
+  try {
+    (requestTrace as Record<string, unknown>).connection = {
+      connected: true,
+      status: 200,
+      provider: configParam.provider,
+      model: configParam.model,
+    };
+  } catch (e) {
+    // ignore if trace mutation fails
+  }
+
+  return { routine: parsed, trace: { ...requestTrace, responseText } };
+}
+
+interface ErrorWithTrace extends Error {
+  trace?: Record<string, unknown>;
+}
+
+async function callClaudeAgent(filters: UserFilters, requestTraceBase: Record<string, unknown> = {}): Promise<{ routine: RoutineResponse; trace: Record<string, unknown> }> {
+  const config = getAIConfig();
+  const prompt = buildUserPrompt(filters);
+  const systemPrompt = buildSystemPrompt();
+  const requestTrace: Record<string, unknown> = {
+    ...requestTraceBase,
+    receivedFilters: filters,
+    receivedFiltersJson: JSON.stringify(filters, null, 2),
+    provider: config.provider,
+    model: config.model,
+    baseURL: config.baseURL,
+    connection: { connected: false, provider: config.provider, model: config.model },
+    request: {
+      systemPrompt,
+      userPrompts: [prompt],
+    },
+  };
+
+  if (!config.apiKey) {
+    throw new Error(`${config.provider.toUpperCase()} API key is not configured`);
+  }
+
+  try {
+    if (config.provider === "gemini") {
+      const modelCandidates = getGeminiModelCandidates(config.model);
+      const attempts: Array<Record<string, unknown>> = [];
+
+      for (const model of modelCandidates) {
+        const url = `${config.baseURL}/models/${model}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+            }),
+          });
+
+          const responseText = await response.text();
+          let responseBody: unknown = {};
+          try {
+            responseBody = JSON.parse(responseText);
+          } catch {
+            responseBody = { raw: responseText };
+          }
+
+          attempts.push({ model, status: response.status, ok: response.ok, response: responseBody });
+
+          if (!response.ok) {
+            const errorPayload = responseBody as Record<string, unknown>;
+            const errorMessage = (errorPayload?.error as Record<string, unknown> | undefined)?.message;
+            if (response.status === 404 || response.status === 400 || /not found|unsupported/i.test(String(errorMessage ?? responseText))) {
+              continue;
+            }
+            throw new Error(`Gemini request failed (${response.status}): ${responseText}`);
+          }
+
+          const responseContent = extractGeminiTextResponse(responseBody);
+          if (!responseContent) {
+            throw new Error("No text response from Gemini");
+          }
+
+          let parsed: RoutineResponse;
+          try {
+            parsed = JSON.parse(responseContent);
+          } catch {
+            throw new Error("Invalid JSON response from Gemini");
+          }
+
+          return {
+            routine: parsed,
+            trace: {
+              ...requestTrace,
+              attemptedModels: attempts,
+              connection: { connected: true, status: 200, provider: config.provider, model },
+              responseText: responseContent,
+            },
+          };
+        } catch (error) {
+          attempts.push({ model, error: error instanceof Error ? error.message : String(error) });
+          if (model === modelCandidates[modelCandidates.length - 1]) {
+            throw error;
+          }
+        }
+      }
+
+      // If Gemini failed for all models, try Anthropic as a fallback when possible
+      if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim()) {
+        const anthroConfig = {
+          provider: "anthropic",
+          baseURL: process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com",
+          apiKey: process.env.ANTHROPIC_API_KEY ?? "",
+          model: process.env.ANTHROPIC_MODEL?.trim() || getFallbackModel(config.model),
+        };
+
+        try {
+          const result = await callAnthropicHelper(anthroConfig, systemPrompt, prompt, requestTrace);
+          // annotate trace with attempted gemini models
+          if (result && result.trace) {
+            (result.trace as Record<string, unknown>).attemptedModels = attempts;
+            (result.trace as Record<string, unknown>).fallback_from_gemini = true;
+          }
+          return result;
+        } catch (e) {
+          attempts.push({ fallbackAnthropicError: e instanceof Error ? e.message : String(e) });
+        }
+      }
+
+      throw new Error("Gemini request failed for all configured models");
+    }
+
+    // For non-Gemini providers call Anthropic helper (or if Gemini fallback reached here)
+    return await callAnthropicHelper(config, systemPrompt, prompt, requestTrace);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    requestTrace.error = message;
+    const wrappedError = new Error(message) as ErrorWithTrace;
+    wrappedError.trace = requestTrace;
+    throw wrappedError;
+  }
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -242,36 +476,34 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  // Validate required fields
   if (!filters.skinType || !filters.primaryConcern || !filters.budget) {
     return Response.json({ error: "Missing required filter fields" }, { status: 400 });
   }
 
-  // Return mock data if toggle is enabled
   if (process.env.USE_MOCK_DATA === "true") {
-    await new Promise((r) => setTimeout(r, 1200)); // simulate latency
+    await new Promise((r) => setTimeout(r, 1200));
     return Response.json(mockData);
   }
 
-  // Check cache
   const cacheKey = makeCacheKey(filters);
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
-    return Response.json(cached.data);
+    return Response.json({ ...cached.data, debug: { cached: true, cacheKey } });
   }
 
   try {
-    const result = await callClaudeAgent(filters);
-    cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
-    return Response.json(result);
+    const { routine, trace } = await callClaudeAgent(filters);
+    cache.set(cacheKey, { data: routine, expiresAt: Date.now() + CACHE_TTL_MS });
+    return Response.json({ ...routine, debug: { ...trace, cacheKey } });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    const debug = err instanceof Error && (err as ErrorWithTrace).trace ? (err as ErrorWithTrace).trace : { error: message };
     console.error("Recommendation generation failed", err);
 
-    if (process.env.USE_MOCK_DATA === "true" || process.env.FALLBACK_TO_MOCK_ON_ERROR === "true") {
-      return Response.json(mockData);
+    if (process.env.FALLBACK_TO_MOCK_ON_ERROR === "true") {
+      return Response.json({ ...mockData, debug: { error: message, ...debug } });
     }
 
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json({ error: message, debug }, { status: 500 });
   }
 }
