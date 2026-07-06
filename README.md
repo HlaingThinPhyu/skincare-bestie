@@ -1,4 +1,4 @@
-# Skincare Scout
+# Skincare Bestie
 
 A personalized skincare routine recommender powered by AI and live product research.
 
