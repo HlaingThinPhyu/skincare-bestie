@@ -12,6 +12,7 @@ import type {
   Climate,
   CurrentRoutine,
 } from "@/lib/types";
+import { useI18n } from "@/lib/i18n";
 import { Sparkles, Loader2 } from "lucide-react";
 
 const DEFAULT_FILTERS: UserFilters = {
@@ -25,12 +26,12 @@ const DEFAULT_FILTERS: UserFilters = {
   currentRoutine: "basic",
 };
 
-const AVOID_OPTIONS: { value: AvoidIngredient; label: string }[] = [
-  { value: "fragrance", label: "Fragrance" },
-  { value: "alcohol", label: "Alcohol" },
-  { value: "parabens", label: "Parabens" },
-  { value: "silicones", label: "Silicones" },
-  { value: "essential-oils", label: "Essential Oils" },
+const AVOID_OPTIONS: { value: AvoidIngredient; labelKey: string }[] = [
+  { value: "fragrance", labelKey: "fragrance" },
+  { value: "alcohol", labelKey: "alcohol" },
+  { value: "parabens", labelKey: "parabens" },
+  { value: "silicones", labelKey: "silicones" },
+  { value: "essential-oils", labelKey: "essentialOils" },
 ];
 
 interface Props {
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export default function FilterForm({ onSubmit, loading }: Props) {
+  const { t } = useI18n();
   const [filters, setFilters] = useState<UserFilters>(DEFAULT_FILTERS);
 
   function set<K extends keyof UserFilters>(key: K, value: UserFilters[K]) {
@@ -64,120 +66,120 @@ export default function FilterForm({ onSubmit, loading }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Skin Type */}
         <div className="space-y-2">
-          <label className="filter-label">Skin Type</label>
+          <label className="filter-label">{t("skinType")}</label>
           <select
             value={filters.skinType}
             onChange={(e) => set("skinType", e.target.value as SkinType)}
             className="filter-select"
           >
-            <option value="dry">Dry</option>
-            <option value="oily">Oily</option>
-            <option value="combination">Combination</option>
-            <option value="normal">Normal</option>
-            <option value="sensitive">Sensitive</option>
+            <option value="dry">{t("dry")}</option>
+            <option value="oily">{t("oily")}</option>
+            <option value="combination">{t("combination")}</option>
+            <option value="normal">{t("normal")}</option>
+            <option value="sensitive">{t("sensitive")}</option>
           </select>
         </div>
 
         {/* Primary Concern */}
         <div className="space-y-2">
-          <label className="filter-label">Primary Concern</label>
+          <label className="filter-label">{t("primaryConcern")}</label>
           <select
             value={filters.primaryConcern}
             onChange={(e) => set("primaryConcern", e.target.value as PrimaryConcern)}
             className="filter-select"
           >
-            <option value="acne">Acne / Breakouts</option>
-            <option value="aging">Anti-Aging / Wrinkles</option>
-            <option value="hyperpigmentation">Hyperpigmentation / Dark Spots</option>
-            <option value="dryness">Dryness / Hydration</option>
-            <option value="sensitivity">Sensitivity / Redness</option>
-            <option value="brightening">Brightening / Glow</option>
-            <option value="pores">Enlarged Pores</option>
-            <option value="redness">Redness / Rosacea</option>
+            <option value="acne">{t("acne")}</option>
+            <option value="aging">{t("aging")}</option>
+            <option value="hyperpigmentation">{t("hyperpigmentation")}</option>
+            <option value="dryness">{t("drynessConcern")}</option>
+            <option value="sensitivity">{t("sensitivity")}</option>
+            <option value="brightening">{t("brightening")}</option>
+            <option value="pores">{t("pores")}</option>
+            <option value="redness">{t("redness")}</option>
           </select>
         </div>
 
         {/* Budget */}
         <div className="space-y-2">
-          <label className="filter-label">Budget per Product</label>
+          <label className="filter-label">{t("budget")}</label>
           <select
             value={filters.budget}
             onChange={(e) => set("budget", e.target.value as Budget)}
             className="filter-select"
           >
-            <option value="under-30">Under $30</option>
-            <option value="30-60">$30 – $60</option>
-            <option value="60-100">$60 – $100</option>
-            <option value="over-100">Over $100</option>
+            <option value="under-30">{t("under30")}</option>
+            <option value="30-60">{t("range3060")}</option>
+            <option value="60-100">{t("range60100")}</option>
+            <option value="over-100">{t("over100")}</option>
           </select>
         </div>
 
         {/* Brand Origin */}
         <div className="space-y-2">
-          <label className="filter-label">Brand Origin</label>
+          <label className="filter-label">{t("brandOrigin")}</label>
           <select
             value={filters.brandOrigin}
             onChange={(e) => set("brandOrigin", e.target.value as BrandOrigin)}
             className="filter-select"
           >
-            <option value="any">No Preference</option>
-            <option value="korean">Korean (K-Beauty)</option>
-            <option value="japanese">Japanese (J-Beauty)</option>
-            <option value="european">European</option>
-            <option value="american">American</option>
+            <option value="any">{t("noPreference")}</option>
+            <option value="korean">{t("korean")}</option>
+            <option value="japanese">{t("japanese")}</option>
+            <option value="european">{t("european")}</option>
+            <option value="american">{t("american")}</option>
           </select>
         </div>
 
         {/* Routine Complexity */}
         <div className="space-y-2">
-          <label className="filter-label">Routine Complexity</label>
+          <label className="filter-label">{t("routineComplexity")}</label>
           <select
             value={filters.routineComplexity}
             onChange={(e) => set("routineComplexity", e.target.value as RoutineComplexity)}
             className="filter-select"
           >
-            <option value="minimal">Minimal (3 steps)</option>
-            <option value="moderate">Moderate (5 steps)</option>
-            <option value="full">Full Routine (7+ steps)</option>
+            <option value="minimal">{t("minimal")}</option>
+            <option value="moderate">{t("moderate")}</option>
+            <option value="full">{t("full")}</option>
           </select>
         </div>
 
         {/* Climate */}
         <div className="space-y-2">
-          <label className="filter-label">Your Climate</label>
+          <label className="filter-label">{t("climate")}</label>
           <select
             value={filters.climate}
             onChange={(e) => set("climate", e.target.value as Climate)}
             className="filter-select"
           >
-            <option value="humid">Humid / Tropical</option>
-            <option value="dry">Dry / Arid</option>
-            <option value="temperate">Temperate</option>
-            <option value="cold">Cold / Harsh Winter</option>
+            <option value="humid">{t("humid")}</option>
+            <option value="dry">{t("dryClimate")}</option>
+            <option value="temperate">{t("temperate")}</option>
+            <option value="cold">{t("cold")}</option>
           </select>
         </div>
 
         {/* Current Routine */}
         <div className="space-y-2">
-          <label className="filter-label">Current Routine</label>
+          <label className="filter-label">{t("currentRoutine")}</label>
           <select
             value={filters.currentRoutine}
             onChange={(e) => set("currentRoutine", e.target.value as CurrentRoutine)}
             className="filter-select"
           >
-            <option value="none">None / Starting Fresh</option>
-            <option value="basic">Basic (Cleanser + Moisturizer)</option>
-            <option value="some">Some Products</option>
-            <option value="full">Full Routine</option>
+            <option value="none">{t("none")}</option>
+            <option value="basic">{t("basic")}</option>
+            <option value="some">{t("someProducts")}</option>
+            <option value="full">{t("fullRoutine")}</option>
           </select>
         </div>
       </div>
 
       {/* Avoid Ingredients (multi-select checkboxes) */}
       <div className="space-y-3">
-        <label className="filter-label">Avoid Ingredients</label>
+        <label className="filter-label">{t("avoidIngredients")}</label>
         <div className="flex flex-wrap gap-3">
-          {AVOID_OPTIONS.map(({ value, label }) => {
+          {AVOID_OPTIONS.map(({ value, labelKey }) => {
             const checked = filters.avoidIngredients.includes(value);
             return (
               <label
@@ -191,7 +193,7 @@ export default function FilterForm({ onSubmit, loading }: Props) {
                   onChange={() => toggleAvoid(value)}
                 />
                 {checked && <span className="mr-1">✓</span>}
-                {label}
+                {t(labelKey)}
               </label>
             );
           })}
@@ -206,12 +208,12 @@ export default function FilterForm({ onSubmit, loading }: Props) {
         {loading ? (
           <>
             <Loader2 className="animate-spin" size={20} />
-            Researching Your Routine…
+            {t("researching")}
           </>
         ) : (
           <>
             <Sparkles size={20} />
-            Find My Skincare Routine
+            {t("findRoutine")}
           </>
         )}
       </button>

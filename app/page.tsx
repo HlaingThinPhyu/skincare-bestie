@@ -3,13 +3,15 @@
 import { useState } from "react";
 import FilterForm from "@/components/FilterForm";
 import ResultsDashboard from "@/components/ResultsDashboard";
+import ThemeToggle from "@/components/ThemeToggle";
+import LanguageSelector from "@/components/LanguageSelector";
+import { useI18n } from "@/lib/i18n";
 import type { UserFilters, RoutineResponse } from "@/lib/types";
 
 export default function Home() {
+  const { t } = useI18n();
   const [routine, setRoutine] = useState<RoutineResponse | null>(null);
-  // temporarily hide debug/request traces in the UI
-  // const [debugTrace, setDebugTrace] = useState<Record<string, unknown> | null>(null);
-  // const [submittedFilters, setSubmittedFilters] = useState<UserFilters | null>(null);
+  const [submittedFilters, setSubmittedFilters] = useState<UserFilters | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,8 +19,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setRoutine(null);
-    // setDebugTrace(null);
-    // setSubmittedFilters(filters);
+    setSubmittedFilters(filters);
 
     try {
       const res = await fetch("/api/recommend", {
@@ -52,24 +53,29 @@ export default function Home() {
       <div className="blob blob-3" aria-hidden="true" />
 
       <div className="relative z-10 max-w-3xl mx-auto space-y-10">
+        {/* Top bar: language selector + theme toggle */}
+        <div className="flex justify-end items-center gap-3">
+          <LanguageSelector />
+          <ThemeToggle />
+        </div>
+
         {/* Hero */}
         <header className="text-center space-y-4">
           <div className="hero-badge mx-auto w-fit">
-            ✦ AI-Powered Skincare Research
+            {t("heroBadge")}
           </div>
           <h1 className="hero-title">
-            Skincare Bestie: Your Personalized Routine, Curated by AI
+            {t("heroTitle")}
           </h1>
           <p className="hero-subtitle">
-            Tell us your skin profile. Our AI researches live products and builds
-            a personalized routine — no generic lists, no guesswork.
+            {t("heroSubtitle")}
           </p>
         </header>
 
         {/* Form or Results */}
         {routine ? (
           <>
-            <ResultsDashboard routine={routine} onReset={() => setRoutine(null)} />
+            <ResultsDashboard routine={routine} filters={submittedFilters} onReset={() => { setRoutine(null); setSubmittedFilters(null); }} />
             {/* debugTrace UI hidden temporarily
             {debugTrace && (
               <section className="glass-card rounded-2xl p-6 space-y-4">
@@ -131,7 +137,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="text-center text-xs text-purple-500">
-          Powered by Claude AI + Tavily search · Results are for informational purposes only
+          {t("footerText")}
         </footer>
       </div>
     </main>

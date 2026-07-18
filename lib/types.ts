@@ -46,3 +46,19 @@ export interface RoutineResponse {
   products: ProductRecommendation[];
   disclaimer: string;
 }
+
+/** Encode UserFilters to a Base64 JSON string for safe transport */
+export function encodeFilters(filters: UserFilters): string {
+  if (typeof window === "undefined") return "";
+  return btoa(JSON.stringify(filters));
+}
+
+/** Decode a Base64 JSON string back to UserFilters */
+export function decodeFilters(encoded: string): UserFilters | null {
+  try {
+    if (typeof window === "undefined") return null;
+    return JSON.parse(atob(encoded)) as UserFilters;
+  } catch {
+    return null;
+  }
+}
