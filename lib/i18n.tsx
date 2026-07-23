@@ -16,8 +16,8 @@ type TranslationKey = string;
 const translations: Record<Locale, Record<TranslationKey, string>> = {
   en: {
     heroBadge: "✦ AI-Powered Skincare Research",
-    heroTitle: "Skincare Bestie: Your Personalized Routine, Curated by AI",
-    heroSubtitle: "Tell us your skin profile. Our AI researches live products and builds a personalized routine — no generic lists, no guesswork.",
+    heroTitle: "Your Skin Bestie",
+    heroSubtitle: "Get personalized recommendations in seconds.Tell us your skin profile. Our AI researches live products and builds a personalized routine — no generic lists, no guesswork.",
     footerText: "Powered by Claude AI + Tavily search · Results are for informational purposes only",
 
     skinType: "Skin Type",
@@ -60,8 +60,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
   },
   zh: {
     heroBadge: "✦ AI 驱动护肤研究",
-    heroTitle: "护肤好友：您的个性化护肤方案，由 AI 精选",
-    heroSubtitle: "告诉我们您的皮肤状况。我们的 AI 研究实时产品并构建个性化护肤方案——无通用列表，无猜测。",
+    heroTitle: "您的护肤好友",
+    heroSubtitle: "秒速获取个性化推荐。告诉我们您的皮肤状况，我们的 AI 会研究实时产品并为您打造专属护肤方案——没有通用列表，无需猜测。",
     footerText: "由 Claude AI + Tavily 搜索驱动 · 结果仅供参考",
 
     skinType: "肤质",
@@ -104,8 +104,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
   },
   fr: {
     heroBadge: "✦ Recherche Skincare par IA",
-    heroTitle: "Skincare Bestie : Votre Routine Personnalisée, Par l'IA",
-    heroSubtitle: "Parlez-nous de votre peau. Notre IA recherche des produits en temps réel et construit une routine personnalisée — pas de listes génériques, pas de devinettes.",
+    heroTitle: "Votre Skincare Bestie",
+    heroSubtitle: "Obtenez des recommandations personnalisées en quelques secondes. Parlez-nous de votre peau. Notre IA recherche des produits en temps réel et construit une routine personnalisée — pas de listes génériques, pas de devinettes.",
     footerText: "Propulsé par Claude AI + Tavily search · Les résultats sont fournis à titre informatif uniquement",
 
     skinType: "Type de Peau",
@@ -148,8 +148,8 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
   },
   my: {
     heroBadge: "✦ AI ဖြင့် အသားထိန်းသိမ်းမှု သုတေသန",
-    heroTitle: "Skincare Bestie - AI ဖြင့် ရွေးချယ်ထားသည့် သင့်ကိုယ်ပိုင် အသားထိန်းသိမ်းမှု အစီအစဉ်",
-    heroSubtitle: "သင့်အသားအရေ အခြေအနေကို ပြောပြပါ။ ကျွန်တော်တို့၏ AI က ထုတ်ကုန်များကို လက်တွေ့ ရှာဖွေပြီး ကိုယ်ပိုင် အစီအစဉ် တည်ဆောက်ပေးပါသည် - ယေဘုယျ စာရင်းများ မဟုတ်ပါ။",
+    heroTitle: "သင့်အသားအရေ မိတ်ဆွေ",
+    heroSubtitle: "စက္ကန့်ပိုင်းအတွင်း ကိုယ်ပိုင်အကြံပြုချက်များ ရယူလိုက်ပါ။ သင့်အသားအရေအခြေအနေကို ပြောပြပါ။ ကျွန်ုပ်တို့၏ AI သည် လက်ရှိထုတ်ကုန်များကို လေ့လာပြီး ကိုယ်ပိုင်ပြင်ဆင်ထားသော ပုံမှန်လုပ်ငန်းစဉ်ကို တည်ဆောက်ပေးပါသည် — ယေဘုယျစာရင်းများ၊ ခန့်မှန်းချက်များ မရှိပါ။",
     footerText: "Claude AI + Tavily search ဖြင့် အားဖြည့်ထားသည် · ရလဒ်များသည် အချက်အလက် ရည်ရွယ်ချက်သာ ဖြစ်ပါသည်",
 
     skinType: "အသားအရေ အမျိုးအစား",
