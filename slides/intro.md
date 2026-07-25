@@ -66,6 +66,16 @@ Instead of static, generic advice, it pairs **Claude AI** with **live web resear
 
 ---
 
+# Screenshots
+
+![Homepage](../screenshots/screenshot-homepage.jpg)
+![Language selection](../screenshots/screenshot-languages.jpg)
+![Recommended products](../screenshots/screenshot-recommendProducts-1.jpg)
+![Recommended products](../screenshots/screenshot-recommendProducts-2.jpg)
+![Recommended products](../screenshots/screenshot-recommendProducts-3.jpg)
+
+---
+
 # How It's Built
 
 ```bash
