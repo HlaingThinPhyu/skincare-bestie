@@ -11,6 +11,139 @@ interface CacheEntry {
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+const VALID_STEPS = new Set([
+  "Cleanser", "Toner", "Essence", "Serum",
+  "Treatment", "Eye Cream", "Moisturizer", "Sunscreen",
+]);
+const PRICE_PATTERN = /^\$\d+(\.\d{2})?$/;
+
+interface ValidationResult {
+  routine: RoutineResponse;
+  warnings: string[];
+}
+
+function validateAndSanitizeRoutine(raw: unknown): ValidationResult {
+  const warnings: string[] = [];
+
+  if (!raw || typeof raw !== "object") {
+    throw new Error("AI response is not a JSON object");
+  }
+
+  const obj = raw as Record<string, unknown>;
+
+  if (!Array.isArray(obj.products) || obj.products.length === 0) {
+    throw new Error("AI response missing products array");
+  }
+
+  const sanitizedProducts: RoutineResponse["products"] = [];
+
+  for (let i = 0; i < obj.products.length; i++) {
+    const p = obj.products[i];
+    if (!p || typeof p !== "object") {
+      warnings.push(`products[${i}]: not an object, skipped`);
+      continue;
+    }
+    const product = p as Record<string, unknown>;
+
+    if (typeof product.step !== "string" || !VALID_STEPS.has(product.step)) {
+      warnings.push(`products[${i}].step: "${product.step}" is not a valid step, skipped`);
+      continue;
+    }
+
+    const productName =
+      typeof product.productName === "string" && product.productName.trim()
+        ? product.productName.trim()
+        : null;
+    if (!productName) {
+      warnings.push(`products[${i}].productName: missing, skipped`);
+      continue;
+    }
+
+    const brand =
+      typeof product.brand === "string" && product.brand.trim()
+        ? product.brand.trim()
+        : "Unknown Brand";
+    if (brand === "Unknown Brand") warnings.push(`products[${i}].brand: missing, defaulted`);
+
+    const origin =
+      typeof product.origin === "string" && product.origin.trim()
+        ? product.origin.trim()
+        : "Unknown";
+    if (origin === "Unknown") warnings.push(`products[${i}].origin: missing, defaulted`);
+
+    const matchReason =
+      typeof product.matchReason === "string" && product.matchReason.trim()
+        ? product.matchReason.trim()
+        : "Recommended for your skin profile.";
+    if (matchReason === "Recommended for your skin profile.")
+      warnings.push(`products[${i}].matchReason: missing, defaulted`);
+
+    const keyIngredients: string[] = Array.isArray(product.keyIngredients)
+      ? (product.keyIngredients as unknown[])
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .slice(0, 5)
+      : [];
+    if (keyIngredients.length === 0) warnings.push(`products[${i}].keyIngredients: empty or missing`);
+
+    const vendors: RoutineResponse["products"][number]["vendors"] = [];
+    if (Array.isArray(product.vendors)) {
+      for (let j = 0; j < product.vendors.length; j++) {
+        const v = product.vendors[j];
+        if (!v || typeof v !== "object") {
+          warnings.push(`products[${i}].vendors[${j}]: not an object, skipped`);
+          continue;
+        }
+        const vendor = v as Record<string, unknown>;
+        const vName =
+          typeof vendor.name === "string" && vendor.name.trim() ? vendor.name.trim() : null;
+        const vUrl =
+          typeof vendor.url === "string" && vendor.url.startsWith("https://")
+            ? vendor.url.trim()
+            : null;
+        const vPrice = typeof vendor.price === "string" ? vendor.price.trim() : "";
+
+        if (!vName || !vUrl) {
+          warnings.push(`products[${i}].vendors[${j}]: missing name or url, skipped`);
+          continue;
+        }
+
+        let price = vPrice;
+        if (!PRICE_PATTERN.test(price)) {
+          const num = parseFloat(price.replace(/[^0-9.]/g, ""));
+          if (!isNaN(num)) {
+            price = `$${num.toFixed(2)}`;
+            warnings.push(`products[${i}].vendors[${j}].price: coerced "${vPrice}" → "${price}"`);
+          } else {
+            price = "$0.00";
+            warnings.push(`products[${i}].vendors[${j}].price: unparseable "${vPrice}", set to $0.00`);
+          }
+        }
+
+        vendors.push({ name: vName, price, url: vUrl });
+      }
+    }
+
+    if (vendors.length === 0) {
+      warnings.push(`products[${i}] (${productName}): no valid vendors, skipped`);
+      continue;
+    }
+
+    sanitizedProducts.push({ step: product.step, productName, brand, origin, matchReason, keyIngredients, vendors });
+  }
+
+  if (sanitizedProducts.length === 0) {
+    throw new Error("AI response contained no usable products after validation");
+  }
+
+  const disclaimer =
+    typeof obj.disclaimer === "string" && obj.disclaimer.trim()
+      ? obj.disclaimer.trim()
+      : "These recommendations are for informational purposes only. Patch-test new products before use.";
+  if (!obj.disclaimer) warnings.push("disclaimer: missing, defaulted");
+
+  return { routine: { products: sanitizedProducts, disclaimer }, warnings };
+}
+
 function makeCacheKey(filters: UserFilters): string {
   const sorted = Object.entries(filters)
     .map(([k, v]) => `${k}:${Array.isArray(v) ? [...v].sort().join("+") : v}`)
@@ -321,12 +454,14 @@ async function callAnthropicHelper(configParam: { provider: string; baseURL: str
     throw new Error("No text response from Claude");
   }
 
-  let parsed: RoutineResponse;
+  let raw: unknown;
   try {
-    parsed = JSON.parse(responseText);
+    raw = JSON.parse(responseText);
   } catch {
     throw new Error("Invalid JSON response from Claude");
   }
+  const { routine: parsed, warnings: validationWarnings } = validateAndSanitizeRoutine(raw);
+  requestTrace.validationWarnings = validationWarnings;
 
   // mark the connection as successful
   try {
@@ -410,12 +545,13 @@ async function callClaudeAgent(filters: UserFilters, requestTraceBase: Record<st
             throw new Error("No text response from Gemini");
           }
 
-          let parsed: RoutineResponse;
+          let rawGemini: unknown;
           try {
-            parsed = JSON.parse(responseContent);
+            rawGemini = JSON.parse(responseContent);
           } catch {
             throw new Error("Invalid JSON response from Gemini");
           }
+          const { routine: parsed, warnings: validationWarnings } = validateAndSanitizeRoutine(rawGemini);
 
           return {
             routine: parsed,
@@ -424,6 +560,7 @@ async function callClaudeAgent(filters: UserFilters, requestTraceBase: Record<st
               attemptedModels: attempts,
               connection: { connected: true, status: 200, provider: config.provider, model },
               responseText: responseContent,
+              validationWarnings,
             },
           };
         } catch (error) {
