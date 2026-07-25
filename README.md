@@ -18,8 +18,15 @@ The results are presented as a clean, interactive dashboard showing each product
 - **Flexible Data Mode**: Toggle between mock data (instant testing) and live AI recommendations
 - **Results Dashboard**: Step-by-step routine display with product details, key ingredients, and purchase links
 - **Caching**: 1-hour cache for API responses to optimize performance
-- **Proxy Support**: Optional 9Router proxy support for flexible deployment
 - **TypeScript Validation**: Fully typed product and filter schemas
+- 
+## Screenshots
+
+![Homepage](screenshots/screenshot-homepage.jpg)
+![Language selection](screenshots/screenshot-languages.jpg)
+![Recommended products](screenshots/screenshot-recommendProducts-1.jpg)
+![Recommended products](screenshots/screenshot-recommendProducts-2.jpg)
+![Recommended products](screenshots/screenshot-recommendProducts-3.jpg)
 
 ## Tech Stack
 
