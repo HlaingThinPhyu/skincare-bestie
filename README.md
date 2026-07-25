@@ -23,10 +23,10 @@ The results are presented as a clean, interactive dashboard showing each product
 ## Screenshots
 
 ![Homepage](screenshots/screenshot-homepage.jpg)
-![Language selection](../screenshots/screenshot-languages.jpg)
-![Recommended products](../screenshots/screenshot-recommendProducts-1.jpg)
-![Recommended products](../screenshots/screenshot-recommendProducts-2.jpg)
-![Recommended products](../screenshots/screenshot-recommendProducts-3.jpg)
+![Language selection](screenshots/screenshot-languages.jpg)
+![Recommended products](screenshots/screenshot-recommendProducts-1.jpg)
+![Recommended products](screenshots/screenshot-recommendProducts-2.jpg)
+![Recommended products](screenshots/screenshot-recommendProducts-3.jpg)
 
 ## Tech Stack
 
