@@ -1,8 +1,8 @@
 @AGENTS.md
 
-# Skincare Scout — Project Guide
+# Skincare Bestie — Project Guide
 
-**Skincare Scout** is a full-stack Next.js 16 app (App Router) that takes structured skin profile filters, calls a Claude agent with Tavily MCP for live product research, and returns a personalized routine as structured JSON rendered in a results dashboard.
+**Skincare Bestie** is a full-stack Next.js 16 app (App Router) that takes structured skin profile filters, calls a Claude agent with Tavily MCP for live product research, and returns a personalized routine as structured JSON rendered in a results dashboard.
 
 ## Architecture
 
