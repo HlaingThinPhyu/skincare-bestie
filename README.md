@@ -1,6 +1,13 @@
 # Skincare Bestie
 
-A personalized skincare routine recommender powered by AI and live product research.
+## 🎯 Your Personalized Skincare Routine in Seconds
+
+Stop scrolling through endless skincare articles. **Skincare Bestie** uses AI to analyze your skin profile and find real products that actually work for YOU — with real prices, real ingredients, and real reviews from real stores.
+
+- 🧴 Get 3/5/7 personalized products tailored to your skin
+- 💰 Filter by budget ($30-$100+)
+- 🌍 Choose from Korean, Japanese, European, or American brands
+- ✨ See exactly where to buy each product (Amazon, Sephora, Ulta, Target)
 
 **Live demo:** [skincare-bestie.vercel.app](https://skincare-bestie.vercel.app/)
 
@@ -10,16 +17,46 @@ A personalized skincare routine recommender powered by AI and live product resea
 
 The results are presented as a clean, interactive dashboard showing each product step with ingredient highlights and direct purchase links.
 
-## Features
+### Features
 
-- **Smart Filter Form**: 8 interactive filters including skin type, primary concern, budget range, brand origin, routine complexity, ingredients to avoid, climate, and current routine level
-- **AI-Powered Recommendations**: Claude AI analyzes your profile and generates personalized product routines
-- **Live Product Research**: Tavily MCP integration enables real-time web search for current products and pricing
-- **Flexible Data Mode**: Toggle between mock data (instant testing) and live AI recommendations
-- **Results Dashboard**: Step-by-step routine display with product details, key ingredients, and purchase links
-- **Caching**: 1-hour cache for API responses to optimize performance
-- **TypeScript Validation**: Fully typed product and filter schemas
-- 
+- **🎨 Smart Filter Form** (8 interactive filters)
+  Skin type, primary concern, budget, brand origin, routine complexity, ingredients to avoid, climate, current routine level
+  
+- **🤖 AI-Powered by Claude Sonnet 4.5**
+  Analyzes your unique skin profile and generates personalized recommendations
+  
+- **🔍 Live Product Research via Tavily**
+  Searches the web for current products with real-time pricing (not outdated databases)
+  
+- **🎯 Multi-Language Support**
+  English, Chinese (中文), French (Français), Burmese (မြန်မာဘာသာ)
+  
+- **🌙 Dark/Light Mode**
+  Customizable interface for any lighting condition
+  
+- **📊 Results Dashboard**
+  Step-by-step routine with product details, key ingredients, and direct purchase links
+  
+## 💡 Who's This For?
+
+- **Skincare Beginners** — No idea where to start? Get a curated routine without the overwhelm
+- **Sensitive Skin** — Filter to avoid fragrance, alcohol, parabens, silicones, essential oils
+- **Budget-Conscious** — Set max price per product and find quality options
+- **K-Beauty Enthusiasts** — Korean, Japanese, European, or American brands at your fingertips
+- **Travel Packing** — Build a routine for different climates (humid, dry, temperate, cold)
+- **Routine Overhaul** — Simplify (3-step) or go comprehensive (7+ steps)
+
+ 
+## How It Works
+
+1. User fills out the FilterForm with 8 filters (skin type, concern, budget, etc.)
+2. Click 'Find My Skincare Routine'.
+3. AI search for best fit products with given filters.
+4. `ResultsDashboard` renders each product as a step card with:
+   - Product name, brand, and origin
+   - Match reason and key ingredients
+   - Vendor links with prices
+
 ## Screenshots
 
 ![Homepage](screenshots/screenshot-homepage.jpg)
@@ -149,26 +186,40 @@ npm start        # Start production server
 npm run lint     # Run ESLint
 ```
 
-## How It Works
-
-1. User fills out the FilterForm with 8 filters (skin type, concern, budget, etc.)
-2. Form submits to `POST /api/recommend` with `UserFilters` JSON
-3. Server checks 1-hour cache; on a miss:
-   - Calls `buildSystemPrompt()` and `buildUserPrompt()` to prepare Claude's context
-   - Sends request to Claude (or 9Router proxy)
-   - Claude calls Tavily MCP tools to research real products (if enabled)
-   - Claude returns structured JSON matching the `RoutineResponse` schema
-   - Response is cached and returned to client
-4. `ResultsDashboard` renders each product as a step card with:
-   - Product name, brand, and origin
-   - Match reason and key ingredients
-   - Vendor links with prices
-
 ## Environment Variables
 
 | Variable | Values | Purpose |
 |---|---|---|
 | `USE_MOCK_DATA` | `true` \| `false` | Skip AI, return mock fixture immediately |
-| `USE_NINEROUTER` | `true` \| `false` | Route through local 9Router proxy instead of direct Anthropic |
 | `TAVILY_API_KEY` | API key string | Enable live web search for products |
 | `ANTHROPIC_API_KEY` | API key string | Claude API access (when `USE_NINEROUTER=false`) |
+
+## ⚠️ Known Limitations & Future Work
+
+- **Product Pricing** - Based on most recent web search (prices change daily)
+- **Ingredient Lists** - Sourced from product pages (may not be 100% complete)
+- **Regional Availability** - Some products may not ship to all countries
+- **Customization** - Limited to 8 filter categories (feedback welcome!)
+
+### Planned Features
+- Share routines with friends
+- Reviews/ratings from real users
+- Integration with Skin Type API
+
+  
+## 📄 License
+
+MIT License - See [LICENSE](./LICENSE) file
+
+## 🙏 Credits
+
+- Built with [Next.js 16](https://nextjs.org)
+- Powered by [Claude AI](https://anthropic.com) & [Tavily Search](https://tavily.com)
+- UI designed with [TailwindCSS 4](https://tailwindcss.com) & [Lucide Icons](https://lucide.dev)
+- Hosted on [Vercel](https://vercel.com)
+
+## 📧 Feedback
+
+Have questions or feature requests? Open an [issue](https://github.com/HlaingThinPhyu/skincare-bestie/issues) or send a PR!
+
+
