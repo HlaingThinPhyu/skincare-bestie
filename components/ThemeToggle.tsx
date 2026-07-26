@@ -12,6 +12,7 @@ export default function ThemeToggle() {
       className="theme-toggle-btn"
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      suppressHydrationWarning
     >
       {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
     </button>
