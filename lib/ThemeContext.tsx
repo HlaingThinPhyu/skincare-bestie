@@ -19,17 +19,22 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // ✅ Lazy initialization - read localStorage once at mount
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark"; // SSR safety
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [isMounted, setIsMounted] = useState(false);
+
+  // ✅ SOLUTION: Defer to client-side initialization
+  useEffect(() => {
     const saved = localStorage.getItem("theme") as Theme | null;
     if (saved === "light" || saved === "dark") {
-      return saved;
+      setTheme(saved);
+      document.documentElement.dataset.theme = saved;
+    } else {
+      document.documentElement.dataset.theme = "dark";
     }
-    return "dark";
-  });
+    setIsMounted(true);
+  }, []);
 
-  // ✅ KEEP this effect - synchronizes state to external systems
+  // ✅ SOLUTION: Skip render if not mounted (prevents mismatch)
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("theme", theme);
@@ -38,6 +43,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggle = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
+
+  // Prevent flash of unstyled content
+  if (!isMounted) {
+    return <>{children}</>;
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggle }}>
