@@ -8,6 +8,8 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+type DataSource = "live" | "mock" | "cached";
+
 const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -209,6 +211,58 @@ function buildUserPrompt(filters: UserFilters): string {
 - Current routine level: ${filters.currentRoutine}
 
 Return only the JSON object.`;
+}
+
+async function validateVendorUrl(url: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: controller.signal,
+      redirect: "follow",
+    });
+    clearTimeout(timeoutId);
+    // Only 404 (Not Found) and 410 (Gone) are definitively broken.
+    // 403, 5xx, etc. may be bot-blocking or transient — keep those links.
+    return res.status !== 404 && res.status !== 410;
+  } catch {
+    clearTimeout(timeoutId);
+    // Network / DNS / timeout → treat as valid to avoid false negatives.
+    return true;
+  }
+}
+
+async function validateRoutineLinks(routine: RoutineResponse): Promise<RoutineResponse> {
+  const products = await Promise.all(
+    routine.products.map(async (product) => {
+      const results = await Promise.allSettled(
+        product.vendors.map(async (vendor) => ({ vendor, valid: await validateVendorUrl(vendor.url) }))
+      );
+      const validVendors = results
+        .filter((r): r is PromiseFulfilledResult<{ vendor: typeof product.vendors[number]; valid: boolean }> =>
+          r.status === "fulfilled" && r.value.valid
+        )
+        .map((r) => r.value.vendor);
+      // If all vendors failed validation, keep originals as fallback
+      return { ...product, vendors: validVendors.length > 0 ? validVendors : product.vendors };
+    })
+  );
+  return { ...routine, products };
+}
+
+// Cache validated mock data so we only re-validate every 30 min.
+let cachedValidatedMock: RoutineResponse | null = null;
+let mockValidatedAt = 0;
+const MOCK_VALIDATION_TTL_MS = 30 * 60 * 1000;
+
+async function getValidatedMockData(): Promise<RoutineResponse> {
+  if (cachedValidatedMock && Date.now() - mockValidatedAt < MOCK_VALIDATION_TTL_MS) {
+    return cachedValidatedMock;
+  }
+  cachedValidatedMock = await validateRoutineLinks(mockData as RoutineResponse);
+  mockValidatedAt = Date.now();
+  return cachedValidatedMock;
 }
 
 function extractJsonObject(text: string): string | null {
@@ -619,30 +673,42 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "Missing required filter fields" }, { status: 400 });
   }
 
+  // USE_MOCK_DATA=true → skip AI entirely, return validated mock fixture.
   if (process.env.USE_MOCK_DATA === "true") {
-    await new Promise((r) => setTimeout(r, 1200));
-    return Response.json(mockData);
+    const validated = await getValidatedMockData();
+    return Response.json({ ...validated, dataSource: "mock" satisfies DataSource });
   }
 
   const cacheKey = makeCacheKey(filters);
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
-    return Response.json({ ...cached.data, debug: { cached: true, cacheKey } });
+    // Cached results were already link-validated when first stored.
+    return Response.json({ ...cached.data, dataSource: "cached" satisfies DataSource, debug: { cached: true, cacheKey } });
   }
+
+  let routine: RoutineResponse;
+  let dataSource: DataSource;
+  let debugInfo: Record<string, unknown> = {};
 
   try {
-    const { routine, trace } = await callClaudeAgent(filters);
+    const { routine: liveRoutine, trace } = await callClaudeAgent(filters);
+    // Validate links before caching so cached entries are already clean.
+    routine = await validateRoutineLinks(liveRoutine);
+    dataSource = "live";
+    debugInfo = { ...trace, cacheKey };
     cache.set(cacheKey, { data: routine, expiresAt: Date.now() + CACHE_TTL_MS });
-    return Response.json({ ...routine, debug: { ...trace, cacheKey } });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    const debug = err instanceof Error && (err as ErrorWithTrace).trace ? (err as ErrorWithTrace).trace : { error: message };
-    console.error("Recommendation generation failed", err);
-
-    if (process.env.FALLBACK_TO_MOCK_ON_ERROR === "true") {
-      return Response.json({ ...mockData, debug: { error: message, ...debug } });
-    }
-
-    return Response.json({ error: message, debug }, { status: 500 });
+    const stack = err instanceof Error ? err.stack : "";
+    const errTrace = err instanceof Error && (err as ErrorWithTrace).trace
+      ? (err as ErrorWithTrace).trace
+      : { error: message };
+    console.error("AI recommendation failed — falling back to mock data:", message);
+    if (stack) console.error("Stack:", stack);
+    routine = await getValidatedMockData();
+    dataSource = "mock";
+    debugInfo = { error: message, fallback: true, errorStack: stack, ...errTrace };
   }
+
+  return Response.json({ ...routine, dataSource, debug: debugInfo });
 }

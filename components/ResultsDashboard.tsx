@@ -2,7 +2,7 @@
 
 import type { RoutineResponse, ProductRecommendation, UserFilters } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
-import { ExternalLink, ShoppingCart, Beaker, Info, RotateCcw } from "lucide-react";
+import { ExternalLink, ShoppingCart, Beaker, Info, RotateCcw, Zap, AlertCircle } from "lucide-react";
 
 const STEP_COLORS: Record<string, string> = {
   Cleanser: "step-cleanser",
@@ -83,21 +83,25 @@ function ProductCard({ product, index }: { product: ProductRecommendation; index
           <ShoppingCart size={12} />
           {t("whereToBuy")}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {product.vendors.map((vendor) => (
-            <a
-              key={vendor.name}
-              href={vendor.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="vendor-link"
-            >
-              {vendor.name}
-              <span className="vendor-price">{vendor.price}</span>
-              <ExternalLink size={10} />
-            </a>
-          ))}
-        </div>
+        {product.vendors.length === 0 ? (
+          <p className="text-xs text-purple-400 italic">{t("noLiveLinks")}</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {product.vendors.map((vendor) => (
+              <a
+                key={vendor.name}
+                href={vendor.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="vendor-link"
+              >
+                {vendor.name}
+                <span className="vendor-price">{vendor.price}</span>
+                <ExternalLink size={10} />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -107,9 +111,10 @@ interface Props {
   routine: RoutineResponse;
   filters: UserFilters | null;
   onReset: () => void;
+  dataSource?: "live" | "mock" | "cached";
 }
 
-export default function ResultsDashboard({ routine, filters, onReset }: Props) {
+export default function ResultsDashboard({ routine, filters, onReset, dataSource }: Props) {
   const { t } = useI18n();
 
   function filterLabel(category: string, value: string): string {
@@ -137,6 +142,20 @@ export default function ResultsDashboard({ routine, filters, onReset }: Props) {
             </>
           )}
           .
+        </div>
+      )}
+
+      {/* Data source indicator */}
+      {dataSource === "mock" && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+          <AlertCircle size={13} className="shrink-0" />
+          {t("dataSourceMock")}
+        </div>
+      )}
+      {dataSource === "live" && (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-xs text-green-400">
+          <Zap size={13} className="shrink-0" />
+          {t("dataSourceLive")}
         </div>
       )}
 

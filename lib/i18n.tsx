@@ -47,6 +47,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     adjustFilters: "Adjust Filters",
     keyIngredients: "Key Ingredients",
     whereToBuy: "Where to Buy",
+    noLiveLinks: "No live product links available now",
+    dataSourceLive: "Live AI research",
+    dataSourceMock: "Example recommendations — AI temporarily unavailable",
+    //dataSourceCached: "Cached recommendations",
 
     filterSummaryIntro: "Product recommendations for",
     skinWord: "skin",
@@ -91,6 +95,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     adjustFilters: "调整筛选",
     keyIngredients: "核心成分",
     whereToBuy: "购买渠道",
+    noLiveLinks: "暂无有效购买链接",
+    dataSourceLive: "实时 AI 研究",
+    dataSourceMock: "示例推荐 — AI 暂时不可用",
+    //dataSourceCached: "缓存推荐结果",
 
     filterSummaryIntro: "产品推荐：",
     skinWord: "肤质",
@@ -135,6 +143,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     adjustFilters: "Ajuster les Filtres",
     keyIngredients: "Ingrédients Clés",
     whereToBuy: "Où Acheter",
+    noLiveLinks: "Aucun lien produit disponible actuellement",
+    dataSourceLive: "Recherche IA en temps réel",
+    dataSourceMock: "Recommandations exemple — IA temporairement indisponible",
+    //dataSourceCached: "Recommandations en cache",
 
     filterSummaryIntro: "Recommandations de produits pour une peau",
     skinWord: "",
@@ -179,6 +191,10 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     adjustFilters: "စစ်ထုတ်မှုများ ပြင်ဆင်ရန်",
     keyIngredients: "အဓိ ပါဝင်ပစ္စည်းများ",
     whereToBuy: "ဘယ်မှာ ဝယ်ရမလဲ",
+    noLiveLinks: "လက်ရှိ ထုတ်ကုန်လင့်ခ်များ မရနိုင်ပါ",
+    dataSourceLive: "တိုက်ရိုက် AI သုတေသန",
+    dataSourceMock: "နမူနာ အကြံပြုချက်များ — AI ယာယီ မရနိုင်ပါ",
+    //dataSourceCached: "သိုလှောင်ထားသော အကြံပြုချက်များ",
 
     filterSummaryIntro: "ထုတ်ကုန် အကြံပြုချက်များ",
     skinWord: "အသားအရေ",
@@ -209,22 +225,16 @@ export function useI18n() {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === "undefined") return "en";
     const saved = localStorage.getItem("locale") as Locale | null;
-    if (saved && translations[saved]) {
-      setLocaleState(saved);
-    }
-    setMounted(true);
-  }, []);
+    return saved && translations[saved] ? saved : "en";
+  });
 
   useEffect(() => {
-    if (!mounted) return;
     document.documentElement.lang = locale;
     localStorage.setItem("locale", locale);
-  }, [locale, mounted]);
+  }, [locale]);
 
   function setLocale(l: Locale) {
     setLocaleState(l);
