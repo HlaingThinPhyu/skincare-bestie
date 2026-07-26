@@ -45,6 +45,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     personalizedRoutine: "Your Personalized Routine",
     productsCurated: "{count} products curated for your skin profile",
     adjustFilters: "Adjust Filters",
+    downloadTxt: "Save as TXT",
     keyIngredients: "Key Ingredients",
     whereToBuy: "Where to Buy",
 
@@ -89,6 +90,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     personalizedRoutine: "您的个性化方案",
     productsCurated: "为您的肤质精选 {count} 件产品",
     adjustFilters: "调整筛选",
+    downloadTxt: "保存为 TXT",
     keyIngredients: "核心成分",
     whereToBuy: "购买渠道",
 
@@ -133,6 +135,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     personalizedRoutine: "Votre Routine Personnalisée",
     productsCurated: "{count} produits sélectionnés pour votre profil de peau",
     adjustFilters: "Ajuster les Filtres",
+    downloadTxt: "Enregistrer en TXT",
     keyIngredients: "Ingrédients Clés",
     whereToBuy: "Où Acheter",
 
@@ -177,6 +180,7 @@ const translations: Record<Locale, Record<TranslationKey, string>> = {
     personalizedRoutine: "သင့်ကိုယ်ပိုင် အသားထိန်းသိမ်းမှု အစီအစဉ်",
     productsCurated: "သင့်အသားအရေ ပရိုဖိုင်အတွက် ထုတ်ကုန် {count} ခု ရွေးချယ်ထားပါသည်",
     adjustFilters: "စစ်ထုတ်မှုများ ပြင်ဆင်ရန်",
+    downloadTxt: "TXT သိမ်းဆည်းရန်",
     keyIngredients: "အဓိ ပါဝင်ပစ္စည်းများ",
     whereToBuy: "ဘယ်မှာ ဝယ်ရမလဲ",
 
@@ -209,22 +213,22 @@ export function useI18n() {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
+  // Initialize with lazy function that reads localStorage
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === "undefined") return "en"; // SSR safety
     const saved = localStorage.getItem("locale") as Locale | null;
     if (saved && translations[saved]) {
-      setLocaleState(saved);
+      return saved;
     }
-    setMounted(true);
-  }, []);
+    return "en";
+  });
+  // This effect now has SSR protection because the initialization already checked window
 
   useEffect(() => {
-    if (!mounted) return;
     document.documentElement.lang = locale;
     localStorage.setItem("locale", locale);
-  }, [locale, mounted]);
+  }, [locale]);
+
 
   function setLocale(l: Locale) {
     setLocaleState(l);

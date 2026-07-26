@@ -2,7 +2,7 @@
 
 import type { RoutineResponse, ProductRecommendation, UserFilters } from "@/lib/types";
 import { useI18n } from "@/lib/i18n";
-import { ExternalLink, ShoppingCart, Beaker, Info, RotateCcw } from "lucide-react";
+import { ExternalLink, ShoppingCart, Beaker, Info, RotateCcw, Zap, AlertCircle, Download } from "lucide-react";
 
 const STEP_COLORS: Record<string, string> = {
   Cleanser: "step-cleanser",
@@ -107,6 +107,63 @@ interface Props {
   routine: RoutineResponse;
   filters: UserFilters | null;
   onReset: () => void;
+  dataSource?: "live" | "mock" | "cached";
+}
+
+function buildTxtContent(routine: RoutineResponse, filters: UserFilters | null): string {
+  const divider = "═".repeat(52);
+  const thin = "─".repeat(52);
+  const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const lines: string[] = [];
+
+  lines.push("SKINCARE BESTIE — Personalized Routine");
+  lines.push(`Generated: ${date}`);
+  lines.push(divider);
+
+  if (filters) {
+    lines.push("");
+    lines.push("YOUR SKIN PROFILE");
+    lines.push(`  Skin Type:       ${filters.skinType}`);
+    lines.push(`  Primary Concern: ${filters.primaryConcern}`);
+    lines.push(`  Budget:          ${filters.budget}`);
+    lines.push(`  Brand Origin:    ${filters.brandOrigin}`);
+    lines.push(`  Climate:         ${filters.climate}`);
+    lines.push(`  Routine:         ${filters.routineComplexity}`);
+    if (filters.avoidIngredients.length > 0) {
+      lines.push(`  Avoiding:        ${filters.avoidIngredients.join(", ")}`);
+    }
+    lines.push("");
+    lines.push(divider);
+  }
+
+  routine.products.forEach((p, i) => {
+    lines.push("");
+    lines.push(`STEP ${i + 1} — ${p.step.toUpperCase()}`);
+    lines.push(`  ${p.productName}`);
+    lines.push(`  ${p.brand} · ${p.origin}`);
+    lines.push("");
+    lines.push("  Why it works:");
+    lines.push(`  ${p.matchReason}`);
+    lines.push("");
+    lines.push("  Key Ingredients:");
+    lines.push(`  ${p.keyIngredients.join(" · ")}`);
+    if (p.vendors.length > 0) {
+      lines.push("");
+      lines.push("  Where to Buy:");
+      p.vendors.forEach((v) => {
+        lines.push(`  • ${v.name.padEnd(18)} ${v.price.padEnd(10)} ${v.url}`);
+      });
+    }
+    lines.push("");
+    lines.push(thin);
+  });
+
+  lines.push("");
+  lines.push("DISCLAIMER");
+  lines.push(routine.disclaimer);
+  lines.push("");
+
+  return lines.join("\n");
 }
 
 export default function ResultsDashboard({ routine, filters, onReset }: Props) {
@@ -115,6 +172,17 @@ export default function ResultsDashboard({ routine, filters, onReset }: Props) {
   function filterLabel(category: string, value: string): string {
     const key = FILTER_I18N_KEYS[category]?.[value];
     return key ? t(key) : value;
+  }
+
+  function handleDownloadTxt() {
+    const content = buildTxtContent(routine, filters);
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `skincare-routine-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -148,10 +216,16 @@ export default function ResultsDashboard({ routine, filters, onReset }: Props) {
             {t("productsCurated", { count: routine.products.length })}
           </p>
         </div>
-        <button onClick={onReset} className="reset-btn flex items-center gap-2">
-          <RotateCcw size={14} />
-          {t("adjustFilters")}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleDownloadTxt} className="reset-btn flex items-center gap-2">
+            <Download size={14} />
+            {t("downloadTxt")}
+          </button>
+          <button onClick={onReset} className="reset-btn flex items-center gap-2">
+            <RotateCcw size={14} />
+            {t("adjustFilters")}
+          </button>
+        </div>
       </div>
 
       {/* Product cards */}

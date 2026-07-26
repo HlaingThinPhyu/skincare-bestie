@@ -28,6 +28,19 @@
   --accent-blue: #3b82f6;
 }
 [data-theme="light"] .blob { opacity: 0.4; }
+[data-theme="light"] .filter-summary {
+  @apply text-gray-800;
+}
+
+[data-theme="light"] .text-purple-200,
+[data-theme="light"] .text-purple-100,
+[data-theme="light"] .text-purple-300 {
+  @apply text-gray-700;
+}
+
+[data-theme="light"] .text-white {
+  @apply text-gray-900;
+}
 [data-theme="light"] .filter-select { background-color: rgba(255, 255, 255, 0.9); border-color: rgba(168, 85, 247, 0.2); }
 [data-theme="light"] .filter-select option { background: #f5f0ff; color: #1a0f2e; }
 [data-theme="light"] .product-card { background: rgba(255, 255, 255, 0.6); border-color: rgba(168, 85, 247, 0.12); }
