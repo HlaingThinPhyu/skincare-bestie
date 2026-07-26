@@ -36,6 +36,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${notoMyanmar.variable} h-full antialiased`}
     >
+      <head>
+        {/* Plausible Analytics */}
+        <script async src="https://plausible.io/js/pa-joFXTgVXaa1z8tGLLQDhNjs"></script>
+        <script>
+          window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};plausible.q=plausible.q||[];plausible.init=plausible.init||function(){...}
+        </script>
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <I18nProvider>{children}</I18nProvider>
