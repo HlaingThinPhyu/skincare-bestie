@@ -213,37 +213,43 @@ export function useI18n() {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // Initialize with lazy function that reads localStorage
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "en"; // SSR safety
+  const [locale, setLocaleState] = useState<Locale>("en");
+  const [isMounted, setIsMounted] = useState(false);
+
+  // ✅ SOLUTION: Read localStorage after mount
+  useEffect(() => {
     const saved = localStorage.getItem("locale") as Locale | null;
     if (saved && translations[saved]) {
-      return saved;
+      setLocaleState(saved);
+      document.documentElement.lang = saved;
+    } else {
+      document.documentElement.lang = "en";
     }
-    return "en";
-  });
-  // This effect now has SSR protection because the initialization already checked window
+    setIsMounted(true);
+  }, []);
 
+  // ✅ SOLUTION: Update DOM when locale changes
   useEffect(() => {
     document.documentElement.lang = locale;
     localStorage.setItem("locale", locale);
   }, [locale]);
 
-
-  function setLocale(l: Locale) {
+  const setLocale = (l: Locale) => {
     setLocaleState(l);
-  }
+  };
 
-  function t(key: string, params?: Record<string, string | number>): string {
+  const t = (key: string, params?: Record<string, string | number>): string => {
     const dict = translations[locale] || translations.en;
     let value = dict[key] || translations.en[key] || key;
+
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
         value = value.replace(`{${k}}`, String(v));
       });
     }
+
     return value;
-  }
+  };
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t }}>
